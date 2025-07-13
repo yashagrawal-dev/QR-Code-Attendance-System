@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Mark Attendance | QR Attendance</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #eaeaea;
+      margin: 0;
+      padding: 0;
+    }
+
+    .header {
+      background-color: #333;
+      color: white;
+      padding: 10px 20px;
+      text-align: center;
+    }
+
+    .container {
+      max-width: 500px;
+      margin: 30px auto;
+      padding: 20px;
+      background-color: white;
+      border-radius: 6px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+
+    h2 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+
+    input[type="text"], input[type="date"] {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 15px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+
+    select {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 15px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+
+    button {
+      width: 100%;
+      padding: 10px;
+      background-color: #3498db;
+      color: white;
+      border: none;
+      font-size: 16px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #2c80b4;
+    }
+
+    .back-link {
+      text-align: center;
+      margin-top: 15px;
+    }
+
+    .back-link a {
+      text-decoration: none;
+      color: #333;
+    }
+
+    .back-link a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+<?php
+$success = "";
+$error = "";
+
+// Only run if form is submitted
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    // Database credentials
+    $servername = "localhost";
+    $username = "root";
+    $password = ""; // or your password
+    $dbname = "attendanceList"; // change this to your DB name
+
+    // Create connection
+    $conn = new mysqli($servername, $username, $password, $dbname);
+
+    // Check connection
+    if ($conn->connect_error) {
+        $error = "Connection failed: " . $conn->connect_error;
+    } else {
+        // Escape inputs
+        $name = $conn->real_escape_string($_POST['student_name']);
+        $roll = $conn->real_escape_string($_POST['roll_no']);
+
+        // Escape inputs first (as your original working version)
+        $raw_date = $conn->real_escape_string($_POST['date']);
+
+        // Then validate AND format
+        $date_obj = DateTime::createFromFormat('Y-m-d', $raw_date);
+
+        if (!$date_obj) {
+            $error = "Invalid date format. Use YYYY-MM-DD";
+            $conn->close();
+            return;
+        }
+
+        // Format to '10-JAN-2025' while keeping original escaped value
+        $formatted_date = $date_obj->format('d-M-Y'); // Produces '10-Jan-2025'
+        $date = strtoupper($formatted_date); // Converts to '10-JAN-2025'
+        $status = $conn->real_escape_string($_POST['status']);
+
+        $course = "";
+        $course_query = "SELECT course FROM Students WHERE RollNo = '$roll' LIMIT 1";
+        $course_result = $conn->query($course_query);
+        
+        if ($course_result && $course_result->num_rows > 0) {
+            $row = $course_result->fetch_assoc();
+            $course = $conn->real_escape_string($row['course']);
+        } else {
+            $error = "Error: Could not find course for roll number $roll";
+            $conn->close();
+            return;
+        }
+
+        // Insert query
+        $sql = "INSERT INTO Attendance (Date, Rollno, Name, Course, Status) VALUES ('$date', '$roll', '$name', '$course', '$status')";
+
+        if ($conn->query($sql) === TRUE) {
+            $success = "Attendance added successfully!";
+        } else {
+            $error = "Error: " . $conn->error;
+        }
+
+        $conn->close();
+    }
+}
+?>
+
+  <div class="header">Mark Attendance</div>
+
+  <div class="container">
+    <h2>Attendance Form</h2>
+    <?php if ($success): ?>
+      <div class="success"><?= $success ?></div>
+    <?php elseif ($error): ?>
+      <div class="error"><?= $error ?></div>
+    <?php endif; ?>
+
+    <form method="POST" action="">
+      <label for="student_name">Student Name:</label>
+      <input type="text" id="student_name" name="student_name" placeholder="Enter student name" required>
+
+      <label for="roll_no">Roll Number:</label>
+      <input type="text" id="roll_no" name="roll_no" placeholder="Enter roll number" required>
+
+      <label for="date">Date:</label>
+      <input type="date" id="date" name="date" required>
+
+      <label for="status">Status:</label>
+      <select id="status" name="status">
+        <option value="Present">Present</option>
+        <option value="Absent">Absent</option>
+      </select>
+
+      <button type="submit">Mark Attendance</button>
+    </form>
+
+    <div class="back-link">
+      <a href="dashboard.php">⬅ Back to Dashboard</a>
+    </div>
+  </div>
+
+</body>
+</html>

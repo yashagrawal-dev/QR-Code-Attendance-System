@@ -1,0 +1,23 @@
+<?php
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    $roll_no = $_POST['roll_no'];
+    $session_id = $_POST['session'];
+
+    $conn = new mysqli("localhost", "root", "", "attendance_db");
+    if ($conn->connect_error) die("Connection failed");
+
+    // You can also add time or IP check to prevent abuse
+    $stmt = $conn->prepare("INSERT INTO attendance (roll_no, session_id, date, status) VALUES (?, ?, CURDATE(), 'Present')");
+    $stmt->bind_param("ss", $roll_no, $session_id);
+    $stmt->execute();
+
+    echo "Attendance marked for Roll No: $roll_no";
+    exit;
+}
+?>
+
+<form method="POST">
+    <input type="hidden" name="session" value="<?php echo $_GET['session']; ?>">
+    Roll No: <input type="text" name="roll_no" required><br>
+    <input type="submit" value="Mark Present">
+</form>

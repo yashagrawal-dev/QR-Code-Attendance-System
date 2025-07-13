@@ -1,0 +1,55 @@
+<?php
+// Database connection
+$host = 'localhost'; // Change if using a different host
+$user = 'root'; // Your DB user
+$password = ''; // Your DB password
+$dbname = 'attendanceList'; // Your DB name
+
+$conn = new mysqli($host, $user, $password, $dbname);
+
+// Check connection
+if ($conn->connect_error) {
+    die("❌ Connection failed: " . $conn->connect_error);
+}
+
+// Fetch students
+$sql = "SELECT RollNo, Name, Email, Course FROM Students"; // Modify column names as per your DB
+$result = $conn->query($sql);
+?>
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Student List</title>
+</head>
+<body>
+    <h1>Student List</h1>
+
+    <table border="1" cellpadding="8">
+        <tr>
+            <th>Roll No.</th>
+            <th>Name</th>
+            <th>Email Id</th>
+            <th>Course</th>
+        </tr>
+
+        <?php
+        if ($result->num_rows > 0) {
+            // Output each row
+            while ($row = $result->fetch_assoc()) {
+                echo "<tr>
+                        <td>{$row['RollNo']}</td>
+                        <td>{$row['Name']}</td>
+                        <td>{$row['Email']}</td>
+                        <td>{$row['Course']}</td>
+                    </tr>";
+            }
+        } else {
+            echo "<tr><td colspan='4'>No students found.</td></tr>";
+        }
+
+        $conn->close();
+        ?>
+    </table>
+</body>
+</html>
